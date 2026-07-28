@@ -40,6 +40,25 @@ jobs:
             mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/
           fi
 
+      - name: Setup Android SDK and Generate Debug Keystore
+        run: |
+          # 1. Generate debug keystore
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+          
+          # 2. Ensure editor settings directory exists
+          mkdir -p ~/.config/godot
+          
+          # 3. Create editor_settings-3.tres with Android SDK & Keystore configuration
+          cat <<EOF > ~/.config/godot/editor_settings-3.tres
+          [gd_resource type="EditorSettings" format=2]
+
+          [resource]
+          export/android/android_sdk_path = "/root/android-sdk"
+          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
       - name: Create build output folders
         run: |
           mkdir -pv build/android
