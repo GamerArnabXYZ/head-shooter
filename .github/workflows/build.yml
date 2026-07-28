@@ -1,16 +1,11 @@
 name: Build Game (Android + Web)
 
-# Runs automatically on every push. Also runnable manually from the
-# "Actions" tab in GitHub (Run workflow button) via workflow_dispatch.
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
 env:
-  # Godot engine version. Pinned to a version confirmed available as a
-  # barichello/godot-ci docker tag. Bump this (and the matching tag below)
-  # if you later confirm a newer 3.5.x tag exists.
   GODOT_VERSION: "3.5.2"
   EXPORT_NAME: "HeadShooter"
 
@@ -25,10 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # The docker image ships export templates under root's home dir.
-      # Different image builds have used either "templates" or
-      # "export_templates" as the folder name, so this step handles both
-      # without failing the build if one of them doesn't exist.
+      # 1. Export Templates setup
       - name: Move export templates into place
         run: |
           mkdir -pv ~/.local/share/godot/templates
@@ -40,21 +32,21 @@ jobs:
             mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/
           fi
 
-      - name: Setup Android SDK and Generate Debug Keystore
+      # 2. Debug Keystore Auto-generate karna
+      - name: Generate Debug Keystore
         run: |
-          # 1. Generate debug keystore
-          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999
-          
-          # 2. Ensure editor settings directory exists
-          mkdir -p ~/.config/godot
-          
-          # 3. Create editor_settings-3.tres with Android SDK & Keystore configuration
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      # 3. Godot Editor Settings Configured karna (Android SDK + Keystore paths)
+      - name: Configure Godot Android Settings
+        run: |
+          mkdir -pv ~/.config/godot
           cat <<EOF > ~/.config/godot/editor_settings-3.tres
           [gd_resource type="EditorSettings" format=2]
 
           [resource]
-          export/android/android_sdk_path = "/root/android-sdk"
-          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/android_sdk_path = "/usr/lib/android-sdk"
+          export/android/debug_keystore = "$PWD/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
@@ -63,6 +55,11 @@ jobs:
         run: |
           mkdir -pv build/android
           mkdir -pv build/web
+
+      # 4. Project import & cache build
+      - name: Prepare Godot Project
+        run: |
+          godot --headless --editor --quit || true
 
       - name: Export Android APK (debug-signed, install-ready)
         run: |
