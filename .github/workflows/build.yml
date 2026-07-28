@@ -1,0 +1,73 @@
+name: Build Game (Android + Web)
+
+# Runs automatically on every push. Also runnable manually from the
+# "Actions" tab in GitHub (Run workflow button) via workflow_dispatch.
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  # Godot engine version. Pinned to a version confirmed available as a
+  # barichello/godot-ci docker tag. Bump this (and the matching tag below)
+  # if you later confirm a newer 3.5.x tag exists.
+  GODOT_VERSION: "3.5.2"
+  EXPORT_NAME: "HeadShooter"
+
+jobs:
+  export:
+    name: Export Android APK & Web build
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:3.5.2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The docker image ships export templates under root's home dir.
+      # Different image builds have used either "templates" or
+      # "export_templates" as the folder name, so this step handles both
+      # without failing the build if one of them doesn't exist.
+      - name: Move export templates into place
+        run: |
+          mkdir -pv ~/.local/share/godot/templates
+          mkdir -pv ~/.local/share/godot/export_templates
+          if [ -d "/root/.local/share/godot/templates/${GODOT_VERSION}.stable" ]; then
+            mv "/root/.local/share/godot/templates/${GODOT_VERSION}.stable" ~/.local/share/godot/templates/
+          fi
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/
+          fi
+
+      - name: Create build output folders
+        run: |
+          mkdir -pv build/android
+          mkdir -pv build/web
+
+      - name: Export Android APK (debug-signed, install-ready)
+        run: |
+          godot --verbose --export-debug "Android" "build/android/${EXPORT_NAME}.apk"
+
+      - name: Export Web build (HTML5 / WebGL 1.0)
+        run: |
+          godot --verbose --export-debug "Web" "build/web/index.html"
+
+      - name: Zip the Web build
+        run: |
+          cd build/web
+          zip -r "../${EXPORT_NAME}-Web.zip" .
+
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-Android-APK
+          path: build/android/${{ env.EXPORT_NAME }}.apk
+          if-no-files-found: error
+
+      - name: Upload Web build artifact (zipped)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-Web
+          path: build/${{ env.EXPORT_NAME }}-Web.zip
+          if-no-files-found: error
