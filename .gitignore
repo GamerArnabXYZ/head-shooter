@@ -1,6 +1,8 @@
 # Defold build artifacts
 /build
 /.internal
+/bundles
+/dist
 
 # bob.jar (downloaded by CI, don't commit the 200MB jar)
 /bob.jar

@@ -82,7 +82,7 @@ jobs:
           fi
           java -jar bob.jar --platform armv7-android --architectures=armv7-android,arm64-android \
             --archive --variant release -bf apk $SIGN_ARGS \
-            -bo build/android-universal \
+            -bo bundles/android-universal \
             distclean build bundle
 
       - name: Build Android (arm64-v8a only)
@@ -93,7 +93,7 @@ jobs:
           fi
           java -jar bob.jar --platform armv7-android --architectures=arm64-android \
             --archive --variant release -bf apk $SIGN_ARGS \
-            -bo build/android-arm64 \
+            -bo bundles/android-arm64 \
             distclean build bundle
 
       - name: Build Android (armeabi-v7a only)
@@ -104,7 +104,7 @@ jobs:
           fi
           java -jar bob.jar --platform armv7-android --architectures=armv7-android \
             --archive --variant release -bf apk $SIGN_ARGS \
-            -bo build/android-armv7 \
+            -bo bundles/android-armv7 \
             distclean build bundle
 
       # ---- Web (HTML5 / wasm) --------------------------------------------
@@ -112,17 +112,17 @@ jobs:
         run: |
           java -jar bob.jar --platform wasm-web \
             --archive --variant release \
-            -bo build/web \
+            -bo bundles/web \
             distclean build bundle
 
       # ---- Collect + rename outputs ---------------------------------------
       - name: Collect release files
         run: |
           mkdir -p dist
-          find build/android-universal -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-universal.apk" \;
-          find build/android-arm64     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-arm64-v8a.apk" \;
-          find build/android-armv7     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-armeabi-v7a.apk" \;
-          WEB_DIR=$(find build/web -maxdepth 1 -mindepth 1 -type d | head -1)
+          find bundles/android-universal -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-universal.apk" \;
+          find bundles/android-arm64     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-arm64-v8a.apk" \;
+          find bundles/android-armv7     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-armeabi-v7a.apk" \;
+          WEB_DIR=$(find bundles/web -maxdepth 1 -mindepth 1 -type d | head -1)
           echo "WEB_DIR=$WEB_DIR" >> "$GITHUB_ENV"
           cd "$WEB_DIR" && zip -r "$OLDPWD/dist/${GAME_TITLE}-web.zip" . && cd "$OLDPWD"
           ls -la dist
