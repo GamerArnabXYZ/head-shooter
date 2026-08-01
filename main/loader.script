@@ -1,0 +1,23 @@
+-- loader.script
+-- Owns the collection proxy that loads /game/game.collection on demand,
+-- and switches control back to the menu gui when the player quits/restarts to menu.
+
+function init(self)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("start_game") then
+		msg.post("#proxy", "load")
+
+	elseif message_id == hash("proxy_loaded") then
+		msg.post(sender, "enable")
+		msg.post(sender, "acquire_input_focus")
+		msg.post("menu#gui", "disable")
+
+	elseif message_id == hash("return_to_menu") then
+		msg.post("#proxy", "release_input_focus")
+		msg.post("#proxy", "disable")
+		msg.post("#proxy", "unload")
+		msg.post("menu#gui", "enable")
+	end
+end

@@ -1,0 +1,12 @@
+font: "/fonts/Minecraft.ttf"
+material: "/builtins/fonts/font.material"
+size: 34
+antialias: 0
+alpha: 1.0
+outline_alpha: 1.0
+outline_width: 2.0
+shadow_alpha: 0.6
+shadow_blur: 0
+shadow_x: 2.0
+shadow_y: -2.0
+render_mode: MODE_SINGLE_LAYER

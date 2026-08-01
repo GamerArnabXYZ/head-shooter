@@ -1,87 +1,81 @@
-# Head Shooter — Minecraft-Styled Bubble Shooter (Godot 3.5)
+# Head Shooter
 
-A mobile-first, square-grid bubble-shooter. Shoot mob heads from the cannon,
-match 3+ of the same type to pop them. Built for **Godot 3.5.x** (GLES2)
-so it runs on low-end Android phones and exports to WebGL 1.0 for old
-browsers/devices too.
+Minecraft-style bubble shooter — bubbles ki jagah mob heads. Built in **Defold**.
+Mobile-first (720x1280, portrait, touch-perfect), GLES-friendly, low-end Android par bhi smooth chalega.
 
-## Project layout
+Engine ka full source `bob.jar` se GitHub Actions par hi build hota hai — koi PC/Defold-editor zaroori nahi.
+Repo ko sirf `git push` karo, baaki sab CI karega.
+
+---
+
+## 1. Setup (one-time)
+
+1. Ye poora folder apne GitHub repo mein push kar do (root mein `game.project` hona chahiye).
+2. **GitHub Pages enable karo** (sirf ek baar):
+   `Settings -> Pages -> Source -> "GitHub Actions"` select karo. Isके baad web build auto-deploy hoga.
+3. **(Optional but recommended) Signed release APK ke liye keystore add karo:**
+   ```bash
+   keytool -genkeypair -v -keystore release.keystore -alias headshooter \
+     -keyalg RSA -keysize 2048 -validity 10000
+   base64 -w0 release.keystore > release.keystore.b64
+   ```
+   Fir repo mein `Settings -> Secrets and variables -> Actions` mein ye 3 secrets add karo:
+   - `ANDROID_KEYSTORE_BASE64` -> `release.keystore.b64` ka content
+   - `ANDROID_KEYSTORE_PASSWORD` -> keystore password
+   - `ANDROID_KEY_ALIAS` -> `headshooter` (ya jo alias diya ho)
+
+   Agar ye secrets nahi dete, CI apne aap ek debug key se sign karega (testing ke liye theek hai,
+   Play Store upload ke liye nahi).
+
+## 2. Build kaise trigger hota hai
+
+`main` branch par har push par `.github/workflows/build.yml` chalta hai aur banata hai:
+
+- `HeadShooter-universal.apk` — armv7 + arm64 dono, sabse safe/compatible APK
+- `HeadShooter-arm64-v8a.apk` — sirf 64-bit devices, chhota size
+- `HeadShooter-armeabi-v7a.apk` — sirf purane 32-bit devices
+- `HeadShooter-web.zip` — HTML5 build ka zip
+- Web build **GitHub Pages** par bhi auto-deploy hota hai
+
+Sab ek fixed `latest` release tag ke andar upload hote hain — **har naya build purane assets ko replace
+kar deta hai** (auto-delete-old, jaisa maanga tha), isliye release page hamesha sirf latest APKs dikhayega.
+
+> ⚠️ **Important correction:** Defold mein Android ke sirf 2 hi architectures support hain —
+> `armv7-android` aur `arm64-android`. `x86_64` Android target Defold mein exist hi nahi karta,
+> isliye "4 formats" possible nahi tha — maine 3 real, working variants diye hain (universal /
+> arm64-v8a / armeabi-v7a) jo Play Store ke liye bhi valid hain.
+
+## 3. Controls
+
+- **Drag** anywhere upar screen par aur **release** karo shoot karne ke liye — jitna upar/side drag karoge utna crossbow rotate hoga.
+- **3 ya zyada same mob-head** touch honge to woh pop ho jayenge.
+- Har 8 shots ke baad ek nayi row upar se aa jaati hai (difficulty ramp).
+- Koi bhi row shooter ke paas pahunch gayi to **Game Over**.
+- Top-right pause icon se pause/resume/restart/menu milta hai.
+
+## 4. Project structure
 
 ```
-project.godot           Engine config (GLES2, portrait 720x1280, autoload)
-export_presets.cfg      Android + Web(HTML5) export presets — used by CI
-default_env.tres        Minimal render environment
-icon.png                App icon
-
-autoload/Globals.gd      Singleton: head types, textures, grid constants, save/load
-
-scenes/home/             Home screen (Start / High Score / Settings / Quit)
-scenes/game/              Game.tscn (root) + Game.gd (HUD/flow) + GridManager.gd (board logic)
-scenes/cannon/            Cannon.tscn/gd — aim + fire (touch AND mouse)
-scenes/head/              Head.tscn/gd — one mob head (grid cell OR flying shot)
-
-theme/GameTheme.tres     Blocky/pixelated global UI theme (buttons, panels)
-assets/heads/*.png       Steve / Creeper / Zombie / Skeleton placeholder art
-assets/ui/cannon.png     Cannon turret placeholder art
-
-.github/workflows/build.yml   CI: builds Android APK + Web build on every push
+main/            home screen (gui matches your screenshot: bg, header, play/settings/info/quit)
+game/            gameplay: hex-grid logic, shooter, bubbles, HUD, pause/game-over
+assets/ui/       tumhare uploaded assets (bg, buttons, bow, icons)
+assets/mobs/     6 original blocky "mob head" sprites (procedurally generated pixel art —
+                 Mojang ke exact textures copy nahi kiye, IP-safe original designs hain)
+fonts/           Minecraft.ttf wired as a Defold font resource
+.github/workflows/build.yml   CI: APKs + web build + release + pages deploy
 ```
 
-**Note on art:** the head/cannon PNGs are small **original** pixel-art
-placeholders I generated (not Mojang/Minecraft's actual copyrighted
-textures) — safe to ship as-is, or swap your own 128×128 PNGs into
-`assets/heads/` and `assets/ui/` any time. No code changes needed.
-
-## Design notes (things worth knowing before you tweak it)
-
-- **Grid is square** (not hex) — 8 columns × 90px cells, 4-directional
-  match adjacency. This was a deliberate simplification for reliability
-  since you can't step through it in the editor on-device; a hex grid
-  has more edge cases. Fully playable and looks fine.
-- Every 8 shots, a new row pushes in from the top (classic bubble-shooter
-  difficulty ramp). Board clears → "BOARD CLEARED"; a head crosses
-  `Globals.DANGER_ROW` → "GAME OVER".
-- Cannon aiming works with `InputEventScreenTouch/Drag` (Android) AND
-  `InputEventMouseButton/Motion` (Web/desktop) in the same code path.
-- High score is saved to `user://savegame.save` (JSON) via Globals.gd.
-- All touch targets (buttons) are ≥90px tall — comfortable thumb size.
-
-## How to push this from your phone (Termux, no PC)
+## 5. Local test build (agar kabhi PC available ho)
 
 ```bash
-# one-time setup
-pkg install git -y
-git config --global user.name "GamerArnabXYZ"
-git config --global user.email "you@example.com"
-
-# from inside the unzipped HeadShooter folder
-cd HeadShooter
-git init
-git add .
-git commit -m "Initial commit: Head Shooter v1"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
+curl -L -o bob.jar https://github.com/defold/defold/releases/latest/download/bob.jar
+java -jar bob.jar resolve build   # needs JDK 25+
 ```
 
-If prompted for a password, GitHub needs a **Personal Access Token**
-(Settings → Developer settings → Personal access tokens → generate one
-with `repo` scope) — paste that as the password.
+## 6. Known limitations / next steps
 
-## Getting your builds
-
-1. Push → go to your repo's **Actions** tab → open the running workflow.
-2. When it finishes (green check), scroll to **Artifacts**:
-   - `HeadShooter-Android-APK` → download, unzip, install the `.apk` on
-     your phone (enable "install unknown apps" once).
-   - `HeadShooter-Web` → download, unzip, and either open `index.html`
-     locally or host the folder (GitHub Pages / Netlify / itch.io) to
-     play in-browser.
-
-## Customizing quickly
-
-- Add a 5th mob type: add an entry to `Globals.HeadType` enum, add its
-  texture to `Globals.HEAD_TEXTURES`, generate/drop in a PNG.
-- Change difficulty: `GridManager.gd` → `shots_per_new_row`, `start_rows`,
-  `Globals.DANGER_ROW`.
-- Change cannon speed/feel: `Cannon.gd` → `speed`, `MIN_ANGLE_MARGIN`.
+- Abhi sound/music nahi hai (assets nahi the) — `sound.gui_script` hooks easily add ho sakte hain.
+- Mob head art original hai, Mojang ke actual textures nahi — chaho to apna khud ka pixel art
+  `assets/mobs/*.png` mein replace kar sakte ho, naming same rakhna (`mob_*.png`, 6 types,
+  `game/constants.lua` ke `MOB_TYPES` mein list hai).
+- Ceiling-drop speed, colors count, shot speed sab `game/constants.lua` mein tweak-able hai.

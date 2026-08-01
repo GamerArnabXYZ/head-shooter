@@ -1,0 +1,33 @@
+name: "main"
+scale_along_z: 0
+embedded_instances {
+  id: "menu"
+  data: "components {\n"
+  "  id: \"gui\"\n"
+  "  component: \"/main/main.gui\"\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+}
+embedded_instances {
+  id: "loader"
+  data: "components {\n"
+  "  id: \"loader\"\n"
+  "  component: \"/main/loader.script\"\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"proxy\"\n"
+  "  type: \"collectionproxy\"\n"
+  "  data: \"collection: \\\"/game/game.collection\\\"\\n\"\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+}

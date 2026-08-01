@@ -1,0 +1,117 @@
+-- main.gui_script
+-- Home screen: button press-states, settings/info popups, play -> game transition.
+
+local INFO_TEXT = "Drag anywhere and release\nto aim + fire your bow.\n\nMatch 3 or more of the\nsame mob head to pop them!\n\nDon't let the heads reach\nthe bottom row!"
+local SETTINGS_TEXT = "Sound: ON\nMusic: ON\n\n(Toggle options coming soon)"
+
+local BUTTONS = { "quit_btn", "play_btn", "settings_btn", "info_btn", "popup_close" }
+
+local BASE_ANIM = {
+	quit_btn = "quit",
+	play_btn = "playbtn",
+	settings_btn = "settings",
+	info_btn = "info",
+}
+
+local function set_pressed(self, id, pressed)
+	local node = gui.get_node(id)
+	local base = BASE_ANIM[id] or id
+	local anim = pressed and (base .. "_pressed") or base
+	if id == "popup_close" then
+		anim = pressed and "quit_pressed" or "quit"
+	end
+	gui.play_flipbook(node, anim)
+end
+
+local function hit(self, id, x, y)
+	local node = gui.get_node(id)
+	if not gui.is_enabled(node) then
+		return false
+	end
+	return gui.pick_node(node, x, y)
+end
+
+local function open_popup(self, kind)
+	self.popup_kind = kind
+	gui.set_enabled(gui.get_node("dim_overlay"), true)
+	gui.set_enabled(gui.get_node("popup_panel"), true)
+	gui.set_enabled(gui.get_node("popup_title"), true)
+	gui.set_enabled(gui.get_node("popup_body"), true)
+	gui.set_enabled(gui.get_node("popup_close"), true)
+	if kind == "info" then
+		gui.set_text(gui.get_node("popup_title"), "HOW TO PLAY")
+		gui.set_text(gui.get_node("popup_body"), INFO_TEXT)
+	else
+		gui.set_text(gui.get_node("popup_title"), "SETTINGS")
+		gui.set_text(gui.get_node("popup_body"), SETTINGS_TEXT)
+	end
+end
+
+local function close_popup(self)
+	self.popup_kind = nil
+	gui.set_enabled(gui.get_node("dim_overlay"), false)
+	gui.set_enabled(gui.get_node("popup_panel"), false)
+	gui.set_enabled(gui.get_node("popup_title"), false)
+	gui.set_enabled(gui.get_node("popup_body"), false)
+	gui.set_enabled(gui.get_node("popup_close"), false)
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.pressed_id = nil
+	self.popup_kind = nil
+	close_popup(self)
+end
+
+function on_input(self, action_id, action)
+	if action_id ~= hash("touch") then
+		return
+	end
+
+	if action.pressed then
+		if self.popup_kind ~= nil then
+			if hit(self, "popup_close", action.x, action.y) then
+				self.pressed_id = "popup_close"
+				set_pressed(self, "popup_close", true)
+			end
+			return
+		end
+
+		for _, id in ipairs(BUTTONS) do
+			if id ~= "popup_close" and hit(self, id, action.x, action.y) then
+				self.pressed_id = id
+				set_pressed(self, id, true)
+				break
+			end
+		end
+
+	elseif action.released then
+		local id = self.pressed_id
+		self.pressed_id = nil
+		if id == nil then
+			return
+		end
+		set_pressed(self, id, false)
+
+		local still_over = hit(self, id, action.x, action.y)
+		if not still_over then
+			return
+		end
+
+		if id == "popup_close" then
+			close_popup(self)
+		elseif id == "play_btn" then
+			msg.post("loader#loader", "start_game")
+		elseif id == "settings_btn" then
+			open_popup(self, "settings")
+		elseif id == "info_btn" then
+			open_popup(self, "info")
+		elseif id == "quit_btn" then
+			if sys.get_sys_info().system_name == "HTML5" then
+				html5.run("if (window.confirm('Exit game?')) { window.close(); }")
+			else
+				sys.exit(0)
+			end
+		end
+	end
+end

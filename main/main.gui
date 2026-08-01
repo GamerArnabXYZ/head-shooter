@@ -1,0 +1,383 @@
+background_color { x: 0.0 y: 0.0 z: 0.0 w: 0.0 }
+nodes {
+  position {
+    x: 360
+    y: 640
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 720
+    y: 1280
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/bg"
+  id: "bg"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 985
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 600
+    y: 200
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/header"
+  id: "header"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 878
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 0.55
+    y: 0.55
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 560
+    y: 60
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 0.85
+    z: 0.4
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "~ By GamerArnabXYZ ~"
+  font: "mc"
+  id: "subtitle"
+  pivot: PIVOT_CENTER
+  enabled: true
+  outline { x: 0.15 y: 0.08 z: 0.02 w: 1 }
+  outline_alpha: 1.0
+  shadow_alpha: 0.0
+  line_break: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 745
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 260
+    y: 260
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/bow"
+  id: "bow_float"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 628
+    y: 1190
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 120
+    y: 120
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/quit"
+  id: "quit_btn"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 384
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 560
+    y: 187
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/playbtn"
+  id: "play_btn"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 250
+    y: 205
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 120
+    y: 120
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/settings"
+  id: "settings_btn"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 470
+    y: 205
+    z: 0.0
+    w: 1.0
+  }
+  size {
+    x: 120
+    y: 120
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/info"
+  id: "info_btn"
+  pivot: PIVOT_CENTER
+  enabled: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 640
+    z: 0.1
+    w: 1.0
+  }
+  size {
+    x: 720
+    y: 1280
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0
+    y: 0
+    z: 0
+    w: 0.65
+  }
+  type: TYPE_BOX
+  texture: ""
+  id: "dim_overlay"
+  pivot: PIVOT_CENTER
+  enabled: false
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 640
+    z: 0.2
+    w: 1.0
+  }
+  size {
+    x: 580
+    y: 560
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.3
+    y: 0.2
+    z: 0.12
+    w: 0.97
+  }
+  type: TYPE_BOX
+  texture: ""
+  id: "popup_panel"
+  pivot: PIVOT_CENTER
+  enabled: false
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 860
+    z: 0.3
+    w: 1.0
+  }
+  scale {
+    x: 0.7
+    y: 0.7
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 500
+    y: 70
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "SETTINGS"
+  font: "mc"
+  id: "popup_title"
+  pivot: PIVOT_CENTER
+  enabled: false
+  outline { x: 0.1 y: 0.05 z: 0.02 w: 1 }
+  outline_alpha: 1.0
+  shadow_alpha: 0.0
+  line_break: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 360
+    y: 660
+    z: 0.3
+    w: 1.0
+  }
+  scale {
+    x: 0.42
+    y: 0.42
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 500
+    y: 400
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.95
+    y: 0.95
+    z: 0.9
+    w: 1.0
+  }
+  type: TYPE_TEXT
+  text: "placeholder"
+  font: "mc"
+  id: "popup_body"
+  pivot: PIVOT_CENTER
+  enabled: false
+  outline { x: 0.1 y: 0.05 z: 0.02 w: 1 }
+  outline_alpha: 1.0
+  shadow_alpha: 0.0
+  line_break: true
+  inherit_alpha: true
+}
+nodes {
+  position {
+    x: 590
+    y: 880
+    z: 0.3
+    w: 1.0
+  }
+  size {
+    x: 90
+    y: 90
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 1
+    y: 1
+    z: 1
+    w: 1.0
+  }
+  type: TYPE_BOX
+  texture: "ui/quit"
+  id: "popup_close"
+  pivot: PIVOT_CENTER
+  enabled: false
+  inherit_alpha: true
+}
+textures {
+  name: "ui"
+  texture: "/assets/ui.atlas"
+}
+fonts {
+  name: "mc"
+  font: "/fonts/minecraft.font"
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT
+script: "/main/main.gui_script"

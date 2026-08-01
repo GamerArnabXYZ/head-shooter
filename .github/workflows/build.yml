@@ -1,89 +1,166 @@
-name: Build Game (Android + Web)
+name: Build & Release Head Shooter
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 env:
-  GODOT_VERSION: "3.5.2"
-  EXPORT_NAME: "HeadShooter"
+  BOB_URL: https://github.com/defold/defold/releases/latest/download/bob.jar
+  GAME_TITLE: HeadShooter
 
 jobs:
-  export:
-    name: Export Android APK & Web build
+  build:
+    name: Build APKs + Web
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:3.5.2
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 1. Export Templates setup
-      - name: Move export templates into place
-        run: |
-          mkdir -pv ~/.local/share/godot/templates
-          mkdir -pv ~/.local/share/godot/export_templates
-          if [ -d "/root/.local/share/godot/templates/${GODOT_VERSION}.stable" ]; then
-            mv "/root/.local/share/godot/templates/${GODOT_VERSION}.stable" ~/.local/share/godot/templates/
-          fi
-          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
-            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/
-          fi
-
-      # 2. Debug Keystore Auto-generate karna
-      - name: Generate Debug Keystore
-        run: |
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-
-      # 3. Godot Editor Settings Configured karna (Android SDK + Keystore paths)
-      - name: Configure Godot Android Settings
-        run: |
-          mkdir -pv ~/.config/godot
-          cat <<EOF > ~/.config/godot/editor_settings-3.tres
-          [gd_resource type="EditorSettings" format=2]
-
-          [resource]
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/debug_keystore = "$PWD/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
-
-      - name: Create build output folders
-        run: |
-          mkdir -pv build/android
-          mkdir -pv build/web
-
-      # 4. Project import & cache build
-      - name: Prepare Godot Project
-        run: |
-          godot --headless --editor --quit || true
-
-      - name: Export Android APK (debug-signed, install-ready)
-        run: |
-          godot --verbose --export-debug "Android" "build/android/${EXPORT_NAME}.apk"
-
-      - name: Export Web build (HTML5 / WebGL 1.0)
-        run: |
-          godot --verbose --export-debug "Web" "build/web/index.html"
-
-      - name: Zip the Web build
-        run: |
-          cd build/web
-          zip -r "../${EXPORT_NAME}-Web.zip" .
-
-      - name: Upload Android APK artifact
-        uses: actions/upload-artifact@v4
+      # Defold's bob.jar (current stable) requires a recent JDK.
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
         with:
-          name: ${{ env.EXPORT_NAME }}-Android-APK
-          path: build/android/${{ env.EXPORT_NAME }}.apk
-          if-no-files-found: error
+          distribution: temurin
+          java-version: '25'
 
-      - name: Upload Web build artifact (zipped)
-        uses: actions/upload-artifact@v4
+      - name: Cache bob.jar
+        id: cache-bob
+        uses: actions/cache@v4
         with:
-          name: ${{ env.EXPORT_NAME }}-Web
-          path: build/${{ env.EXPORT_NAME }}-Web.zip
-          if-no-files-found: error
+          path: bob.jar
+          key: bob-jar-latest-${{ github.run_id }}
+          restore-keys: bob-jar-latest-
+
+      - name: Download bob.jar
+        run: |
+          if [ ! -f bob.jar ]; then
+            curl -fL -o bob.jar "$BOB_URL"
+          fi
+          java -jar bob.jar --version || true
+
+      - name: Resolve project dependencies
+        run: java -jar bob.jar resolve
+
+      # ---- Android signing keystore (optional) --------------------------
+      # Add these repo secrets to get a properly signed release APK:
+      #   ANDROID_KEYSTORE_BASE64  -> `base64 -w0 your.keystore`
+      #   ANDROID_KEYSTORE_PASSWORD
+      #   ANDROID_KEY_ALIAS
+      # Without them, bob signs with an auto-generated debug key
+      # (fine for testing, NOT for the Play Store).
+      - name: Prepare keystore
+        id: keystore
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+            echo "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > keystore_pass.txt
+            echo "has_keystore=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_keystore=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret set - bundling with an auto-generated debug key."
+          fi
+
+      # ---- Android: 3 real variants --------------------------------------
+      # Defold only supports armv7-android and arm64-android as Android
+      # architectures - there is no x86_64-android target, so a 4th
+      # "x86_64" APK is not possible here.
+      - name: Build Android (universal - armv7 + arm64)
+        run: |
+          SIGN_ARGS=""
+          if [ "${{ steps.keystore.outputs.has_keystore }}" = "true" ]; then
+            SIGN_ARGS="--keystore=release.keystore --keystore-pass=keystore_pass.txt --keystore-alias=${{ secrets.ANDROID_KEY_ALIAS }}"
+          fi
+          java -jar bob.jar --platform armv7-android --architectures=armv7-android,arm64-android \
+            --archive --variant release -bf apk $SIGN_ARGS \
+            -bo build/android-universal \
+            distclean build bundle
+
+      - name: Build Android (arm64-v8a only)
+        run: |
+          SIGN_ARGS=""
+          if [ "${{ steps.keystore.outputs.has_keystore }}" = "true" ]; then
+            SIGN_ARGS="--keystore=release.keystore --keystore-pass=keystore_pass.txt --keystore-alias=${{ secrets.ANDROID_KEY_ALIAS }}"
+          fi
+          java -jar bob.jar --platform armv7-android --architectures=arm64-android \
+            --archive --variant release -bf apk $SIGN_ARGS \
+            -bo build/android-arm64 \
+            distclean build bundle
+
+      - name: Build Android (armeabi-v7a only)
+        run: |
+          SIGN_ARGS=""
+          if [ "${{ steps.keystore.outputs.has_keystore }}" = "true" ]; then
+            SIGN_ARGS="--keystore=release.keystore --keystore-pass=keystore_pass.txt --keystore-alias=${{ secrets.ANDROID_KEY_ALIAS }}"
+          fi
+          java -jar bob.jar --platform armv7-android --architectures=armv7-android \
+            --archive --variant release -bf apk $SIGN_ARGS \
+            -bo build/android-armv7 \
+            distclean build bundle
+
+      # ---- Web (HTML5 / wasm) --------------------------------------------
+      - name: Build Web (HTML5)
+        run: |
+          java -jar bob.jar --platform wasm-web \
+            --archive --variant release \
+            -bo build/web \
+            distclean build bundle
+
+      # ---- Collect + rename outputs ---------------------------------------
+      - name: Collect release files
+        run: |
+          mkdir -p dist
+          find build/android-universal -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-universal.apk" \;
+          find build/android-arm64     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-arm64-v8a.apk" \;
+          find build/android-armv7     -name "*.apk" -exec cp {} "dist/${GAME_TITLE}-armeabi-v7a.apk" \;
+          WEB_DIR=$(find build/web -maxdepth 1 -mindepth 1 -type d | head -1)
+          echo "WEB_DIR=$WEB_DIR" >> "$GITHUB_ENV"
+          cd "$WEB_DIR" && zip -r "$OLDPWD/dist/${GAME_TITLE}-web.zip" . && cd "$OLDPWD"
+          ls -la dist
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.WEB_DIR }}
+
+      # ---- Release: delete old assets, publish fresh ones ----------------
+      - name: Delete previous "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete latest --yes --cleanup-tag || true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Head Shooter - latest build"
+          body: |
+            Auto-built from commit ${{ github.sha }}.
+            Android: universal / arm64-v8a / armeabi-v7a APKs.
+            Web build is also live on GitHub Pages.
+          files: |
+            dist/${{ env.GAME_TITLE }}-universal.apk
+            dist/${{ env.GAME_TITLE }}-arm64-v8a.apk
+            dist/${{ env.GAME_TITLE }}-armeabi-v7a.apk
+            dist/${{ env.GAME_TITLE }}-web.zip
+
+  deploy-web:
+    name: Deploy Web to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

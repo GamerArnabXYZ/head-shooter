@@ -1,0 +1,27 @@
+[project]
+title = Head Shooter
+version = 1.0
+publisher = ArnabLabZ Studio
+
+[bootstrap]
+main_collection = /main/main.collectionc
+render = /builtins/render/default.renderc
+
+[display]
+width = 720
+height = 1280
+high_dpi = 0
+dynamic_orientation = 0
+display_profiles = /builtins/render/default.display_profilesc
+
+[input]
+game_binding = /input/game.input_bindingc
+gamepads = /builtins/input/default.gamepadsc
+
+[android]
+package = com.arnablabz.headshooter
+version_code = 1
+
+[html5]
+htmlfile = /builtins/manifests/web/engine_template.html
+heap_size = 268435456

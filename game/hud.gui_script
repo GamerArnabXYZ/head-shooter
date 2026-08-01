@@ -1,0 +1,132 @@
+-- hud.gui_script
+-- In-game HUD: score, next/current ammo preview, pause button,
+-- and the shared pause / game-over overlay.
+
+local BASE_ANIM = {
+	pause_btn = "pause",
+	resume_btn = "play",
+	restart_btn = "restart",
+	menu_btn = "quit",
+}
+
+local OVERLAY_NODES = { "dim_overlay", "ov_panel", "ov_title", "ov_body" }
+
+local function set_pressed(self, id, pressed)
+	local base = BASE_ANIM[id]
+	local anim = pressed and (base .. "_pressed") or base
+	gui.play_flipbook(gui.get_node(id), anim)
+end
+
+local function hit(self, id, x, y)
+	local node = gui.get_node(id)
+	if not gui.is_enabled(node) then
+		return false
+	end
+	return gui.pick_node(node, x, y)
+end
+
+local function interactive_ids(self)
+	if self.mode == "playing" then
+		return { "pause_btn" }
+	elseif self.mode == "paused" then
+		return { "resume_btn", "restart_btn", "menu_btn" }
+	else -- gameover
+		return { "restart_btn", "menu_btn" }
+	end
+end
+
+local function set_overlay_enabled(self, enabled)
+	for _, id in ipairs(OVERLAY_NODES) do
+		gui.set_enabled(gui.get_node(id), enabled)
+	end
+end
+
+local function handle_action(self, id)
+	if id == "pause_btn" then
+		msg.post("controller#controller", "request_pause")
+	elseif id == "resume_btn" then
+		msg.post("controller#controller", "request_resume")
+	elseif id == "restart_btn" then
+		msg.post("controller#controller", "request_restart")
+	elseif id == "menu_btn" then
+		msg.post("controller#controller", "request_quit_to_menu")
+	end
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.mode = "playing"
+	self.pressed_id = nil
+	set_overlay_enabled(self, false)
+	gui.set_enabled(gui.get_node("resume_btn"), false)
+	gui.set_enabled(gui.get_node("restart_btn"), false)
+	gui.set_enabled(gui.get_node("menu_btn"), false)
+end
+
+function on_input(self, action_id, action)
+	if action_id ~= hash("touch") then
+		return false
+	end
+
+	if action.pressed then
+		for _, id in ipairs(interactive_ids(self)) do
+			if hit(self, id, action.x, action.y) then
+				self.pressed_id = id
+				set_pressed(self, id, true)
+				return true
+			end
+		end
+		return self.mode ~= "playing"
+
+	elseif action.released then
+		if self.pressed_id then
+			local id = self.pressed_id
+			self.pressed_id = nil
+			set_pressed(self, id, false)
+			if hit(self, id, action.x, action.y) then
+				handle_action(self, id)
+			end
+			return true
+		end
+		return self.mode ~= "playing"
+	end
+
+	return self.mode ~= "playing"
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("update_score") then
+		gui.set_text(gui.get_node("score_text"), "Score: " .. tostring(message.score))
+
+	elseif message_id == hash("update_next") then
+		gui.play_flipbook(gui.get_node("next_icon"), message.mob)
+
+	elseif message_id == hash("update_current") then
+		gui.play_flipbook(gui.get_node("current_icon"), message.mob)
+
+	elseif message_id == hash("show_pause") then
+		self.mode = "paused"
+		set_overlay_enabled(self, true)
+		gui.set_text(gui.get_node("ov_title"), "PAUSED")
+		gui.set_text(gui.get_node("ov_body"), "Tap Resume to\nkeep shooting!")
+		gui.set_enabled(gui.get_node("resume_btn"), true)
+		gui.set_enabled(gui.get_node("restart_btn"), true)
+		gui.set_enabled(gui.get_node("menu_btn"), true)
+
+	elseif message_id == hash("show_game_over") then
+		self.mode = "gameover"
+		set_overlay_enabled(self, true)
+		gui.set_text(gui.get_node("ov_title"), "GAME OVER")
+		gui.set_text(gui.get_node("ov_body"), "Final Score\n" .. tostring(message.score))
+		gui.set_enabled(gui.get_node("resume_btn"), false)
+		gui.set_enabled(gui.get_node("restart_btn"), true)
+		gui.set_enabled(gui.get_node("menu_btn"), true)
+
+	elseif message_id == hash("hide_overlay") then
+		self.mode = "playing"
+		set_overlay_enabled(self, false)
+		gui.set_enabled(gui.get_node("resume_btn"), false)
+		gui.set_enabled(gui.get_node("restart_btn"), false)
+		gui.set_enabled(gui.get_node("menu_btn"), false)
+	end
+end

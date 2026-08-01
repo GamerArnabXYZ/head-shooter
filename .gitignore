@@ -1,14 +1,15 @@
-# Godot 3.x — auto-generated import cache, safe to ignore, regenerated on open
-.import/
+# Defold build artifacts
+/build
+/.internal
 
-# NOTE: export_presets.cfg is intentionally NOT ignored — GitHub Actions
-# needs it to know the Android + Web export presets. It contains no
-# secrets (keystore fields are empty; CI uses the image's debug keystore).
-
-# Local build output (CI writes here too, but we don't want to commit it)
-build/
+# bob.jar (downloaded by CI, don't commit the 200MB jar)
+/bob.jar
+release.keystore
+keystore_pass.txt
+key_pass.txt
 
 # OS / editor junk
 .DS_Store
-*.tmp
-*.log
+Thumbs.db
+*.swp
+.vscode/

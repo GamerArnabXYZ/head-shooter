@@ -1,0 +1,38 @@
+name: "game"
+scale_along_z: 0
+instances {
+  id: "bg"
+  prototype: "/game/bg.go"
+  position {
+    x: 360.0
+    y: 640.0
+    z: 0.0
+  }
+}
+instances {
+  id: "shooter"
+  prototype: "/game/shooter.go"
+  position {
+    x: 360.0
+    y: 150.0
+    z: 0.1
+  }
+}
+instances {
+  id: "controller"
+  prototype: "/game/controller.go"
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+}
+instances {
+  id: "hud"
+  prototype: "/game/hud.go"
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+}
